@@ -48,7 +48,12 @@ public class Client
         String[] messageArray;
         ReceiverClientThread rThread = new ReceiverClientThread(Integer.parseInt(args[0]));
         rThread.start();
-    
+
+
+
+        ArrayList<Message> messageList = new ArrayList<Message>();
+
+        
         
         //Gets the list of all other registered clients.
         //This tells us who we can message.
@@ -56,6 +61,7 @@ public class Client
         TimeUnit.SECONDS.sleep(1);
         while(!rThread.messagesFromServer.isEmpty())
         {
+            
             messageArray = rThread.messagesFromServer.poll();
             System.out.println("Available Clients: " + messageArray[3]);
         }
@@ -76,18 +82,61 @@ public class Client
                 System.out.println("What is the message?");
                 String text = input.nextLine();
                 System.out.println("");
-                sendMessage(socket, recipient, text, packet);
+
+
+                Message m = new Message(recipient, args[1], text);    //changed to create object
+                m.sendMessage(socket, packet);
+                messageList.add(m);
+
+
+                
                 //continue;
             }
             if(sRQuit.toLowerCase().equals("quit") || sRQuit.toLowerCase().equals("q") )
             {
                 break;
             }
-            while(!rThread.messagesFromServer.isEmpty()) //this is how we see all the messages we have been sent
+            while(!rThread.messagesFromServer.isEmpty())  //this is how we see all the messages we have been sent
             {
-                messageArray = rThread.messagesFromServer.poll();
-                System.out.println("Message from " + messageArray[3] + ":");
-                System.out.println(messageArray[4]+"\n");
+                messageArray = rThread.messagesFromServer.poll();               
+                
+                System.out.println("Message from server: " + messageArray[1]);
+
+                if (messageArray[1].equals("Send-MSG-S")){
+                
+                    System.out.println("Message from " + messageArray[3] + ":");
+                    System.out.println(messageArray[4]+"\n");
+                    sendMessageReciept(socket, messageArray[3], messageArray[5], packet);
+                }
+
+                if (messageArray[1].equals("Send-MSG-SENT-S")){
+                    System.out.println("Message has been sent, message id = " + messageArray[4]);
+
+                    for (Message msg : messageList) { 		      
+                        if (msg.getId().equals(messageArray[4])){
+                            msg.setSent(true);
+                            System.out.println("Message FOUND and set to SENT");
+                        }
+                   }
+
+                }
+
+
+                if (messageArray[1].equals("Send-MSG-RECIEPT-S")){
+                    System.out.println("reciept for:  " + messageArray[4]);
+
+
+                    for (Message msg : messageList) { 		      
+                        if (msg.getId().equals(messageArray[4])){
+                            msg.setRecieved(true);
+                            msg.setSent(true);
+                            System.out.println("Message FOUND and set to  SENT and RECIEVED");
+                        }
+                   }
+                }
+
+
+
             }
         }
       
@@ -165,5 +214,25 @@ public class Client
         
         socket.send(packet);
     }
+
+    private static void sendMessageReciept(DatagramSocket socket, String recipient, String id, DatagramPacket packet) throws IOException
+    {
+        String chatProtocolVersion = "ChatTP v1.0\n";
+        String chatRequestType = "Send-MSG-RECIEPT-C\n";
+        DateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+        String chatDate = df.format(new Date()) + "\n";
+        //Add hash...
+        String recip = recipient + "\n";
+        String body = id;
+
+        String msg = chatProtocolVersion + chatRequestType + chatDate + recip + body;
+        byte[] buf = new byte[1024];
+        buf = msg.getBytes();
+        packet.setData(buf);
+        
+        socket.send(packet);
+    }
+
+
 
 }

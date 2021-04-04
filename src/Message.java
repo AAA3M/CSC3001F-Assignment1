@@ -12,6 +12,7 @@ public class Message {
     private boolean sent;
     private boolean recieved;
     private long checkSum;
+    private String id;
 
 /**
  * Constructor for a message object. Object will automatically set sent and recieved to false on creation.
@@ -28,6 +29,7 @@ public class Message {
         this.text = text;
         this.sent = false;
         this.recieved = false;
+        this.id = "0";
 
         Check messageCheck = new Check(reciever + sender + text);
         this.checkSum = messageCheck.Checksum();
@@ -48,10 +50,11 @@ public class Message {
         String chatProtocolVersion = "ChatTP v1.0\n";
         String chatRequestType = "Send-MSG-C\n";
         DateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
-        String chatDate = df.format(new Date()) + "\n";
+        String chatDate = df.format(new Date());
         //Add hash...
+        this.id = text + chatDate;
 
-        String msg = chatProtocolVersion + chatRequestType + chatDate + this.toString();
+        String msg = chatProtocolVersion + chatRequestType + chatDate + "\n" + this.toString();
 
         byte[] buf  = new byte[1024];
         buf = msg.getBytes();
@@ -66,7 +69,7 @@ public class Message {
     }
 
     public void setRecieved(String recieved) {
-        this.recieved = (recieved == "true");
+        this.recieved = (recieved.equals("true"));
     }
 
     public void setSent(boolean sent) {
@@ -74,7 +77,7 @@ public class Message {
     }
 
     public void setSent(String sent) {
-        this.sent = (sent == "true");
+        this.sent = (sent.equals("true"));
     }
 
     public void setCheckSum(long checkSum) {
@@ -110,13 +113,17 @@ public class Message {
         return recieved;
     }
 
+    public String getId() {
+        return id;
+    }
+
 
 /**
  * the toString is in the format required by the server. 
  */
     @Override
     public String toString() {
-        return "" + checkSum + '\n' + reciever + '\n' + sender + '&' + text + '&' + sent  + '&' + recieved;
+        return "" + checkSum + '\n' + reciever + '\n' + text + '\n' + sent + '\n' + recieved  + '\n' + sender + '\n' + id;
     }
 
 /**
